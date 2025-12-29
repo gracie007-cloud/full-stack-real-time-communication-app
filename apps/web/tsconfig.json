@@ -27,6 +27,12 @@
       ],
       "@/../convex/*": [
         "../../convex/*"
+      ],
+      "@convex-dev/auth/nextjs/server": [
+        "../../node_modules/@convex-dev/auth/dist/nextjs/server/index.d.ts"
+      ],
+      "@convex-dev/auth/nextjs": [
+        "../../node_modules/@convex-dev/auth/dist/nextjs/index.d.ts"
       ]
     }
   },
