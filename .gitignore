@@ -1,0 +1,7 @@
+node_modules
+
+# Dependencies
+node_modules/
+**/node_modules/
+bun.lockb
+package-lock.json
