@@ -13,17 +13,23 @@ export default convexAuthNextjsMiddleware((req) => {
   const url = req.nextUrl;
 
   // ---- account.kiiaren.com ----
-  // Redirect old singular domain to new plural domain
+  // Redirect to auth.kiiaren.com for unified authentication
   if (host === 'account.kiiaren.com') {
-    return NextResponse.redirect(new URL('https://accounts.kiiaren.com'));
+    return NextResponse.redirect(new URL('https://auth.kiiaren.com'));
   }
 
   // ---- accounts.kiiaren.com ----
+  // Redirect plural to singular auth domain
+  if (host === 'accounts.kiiaren.com') {
+    return NextResponse.redirect(new URL('https://auth.kiiaren.com'));
+  }
+
+  // ---- auth.kiiaren.com ----
   // Unified authentication domain serving both UI and OAuth callbacks
   // Root (/) -> serves login page from /account
   // /api/auth/* -> OAuth callback endpoints
   // /oauth-success -> post-OAuth redirect page
-  if (host === 'accounts.kiiaren.com') {
+  if (host === 'auth.kiiaren.com') {
     // Root path serves the login UI
     if (url.pathname === '/') {
       url.pathname = '/account';
