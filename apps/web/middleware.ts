@@ -18,10 +18,8 @@ export default convexAuthNextjsMiddleware((req) => {
     if (!url.pathname.startsWith('/account')) {
       url.pathname = `/account${url.pathname}`;
     }
-    // Protect account routes
-    if (!isSignInPage(req) && !isAuthenticatedNextjs()) {
-      return nextjsMiddlewareRedirect(req, '/auth');
-    }
+    // Account subdomain IS the auth page, so it must be public
+    // If user is already authenticated, client-side code will redirect to dashboard
     return NextResponse.rewrite(url);
   }
 

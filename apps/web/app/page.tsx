@@ -1,34 +1,64 @@
 'use client';
 
-import { Loader } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
 
-import { useGetWorkspaces } from '@/features/workspaces/api/use-get-workspaces';
-import { useCreateWorkspaceModal } from '@/features/workspaces/store/use-create-workspace-modal';
+import { useConvexAuth } from 'convex/react';
+import { Loader } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-const HomePage = () => {
+const LandingPage = () => {
   const router = useRouter();
-  const [open, setOpen] = useCreateWorkspaceModal();
-  const { data, isLoading } = useGetWorkspaces();
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const workspaceId = useMemo(() => data?.[0]?._id, [data]);
+  const handleStart = () => {
+    if (isLoading || isRedirecting) return;
 
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (workspaceId) {
-      router.replace(`/workspace/${workspaceId}`);
-    } else if (!open) {
-      setOpen(true);
+    if (isAuthenticated) {
+      // If logged in, go to dashboard
+      // Check if we are in production or local
+      const isProd = window.location.hostname.includes('kiiaren.com');
+      if (isProd) {
+        window.location.href = 'https://dashboard.kiiaren.com';
+      } else {
+        // Local: go to workspace root logic
+        // We can't go to /workspace directly because we don't know the ID yet
+        // But wait, apps/web/app/workspace/page.tsx handles the finding of ID.
+        // So we can link to a route that renders that component.
+        // But that component is at /workspace/page.tsx.
+        // The route is /workspace.
+        router.push('/workspace');
+      }
+    } else {
+      // Not logged in: go to account/login
+      const isProd = window.location.hostname.includes('kiiaren.com');
+      if (isProd) {
+        window.location.href = 'https://account.kiiaren.com';
+      } else {
+        router.push('/account');
+      }
     }
-  }, [workspaceId, isLoading, open, setOpen, router]);
+  };
 
   return (
-    <div className="flex h-full flex-1 flex-col items-center justify-center gap-2 bg-muted text-white">
-      <Loader className="size-5 animate-spin" />
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground">
+      <div className="flex flex-col items-center gap-y-8">
+        <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
+          Welcome to KIIAREN
+        </h1>
+        <p className="text-xl text-muted-foreground">
+          Your new productivity platform.
+        </p>
+
+        <div className="flex gap-4">
+          <Button size="lg" onClick={handleStart} className="text-lg px-8" disabled={isLoading}>
+            {isLoading ? <Loader className="size-5 animate-spin" /> : (isAuthenticated ? 'Open App' : 'Get Started')}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default HomePage;
+export default LandingPage;
