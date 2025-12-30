@@ -11,8 +11,8 @@ const OAuthSuccessPage = () => {
         // Wait for auth to settle
         if (!isLoading) {
             if (isAuthenticated) {
-                // Redirect to dashboard
-                window.location.href = 'https://dashboard.kiiaren.com';
+                // Redirect to workspace (not dashboard root to avoid middleware redirect loop)
+                window.location.href = 'https://dashboard.kiiaren.com/workspace';
             } else {
                 // Failed or cancelled? Back to landing
                 window.location.href = '/';
