@@ -4,7 +4,7 @@ import {
   isAuthenticatedNextjs,
   nextjsMiddlewareRedirect,
 } from '@convex-dev/auth/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 const isSignInPage = createRouteMatcher(['/auth']);
 
@@ -13,6 +13,7 @@ export default convexAuthNextjsMiddleware((req) => {
   const url = req.nextUrl;
 
   // ---- account.kiiaren.com ----
+  // NOTE: Requires 'apps/web/app/account' directory to exist
   if (host === 'account.kiiaren.com') {
     if (!url.pathname.startsWith('/account')) {
       url.pathname = `/account${url.pathname}`;
@@ -25,10 +26,14 @@ export default convexAuthNextjsMiddleware((req) => {
   }
 
   // ---- dashboard.kiiaren.com ----
+  // Maps to the main workspace app (apps/web/app/workspace)
   if (host === 'dashboard.kiiaren.com') {
-    if (!url.pathname.startsWith('/app')) {
-      url.pathname = `/app${url.pathname}`;
+    // The user's request used '/app', but the project structure uses '/workspace'
+    // We map to '/workspace' to ensure it finds the correct files.
+    if (!url.pathname.startsWith('/workspace')) {
+      url.pathname = `/workspace${url.pathname}`;
     }
+
     // Protect dashboard
     if (!isSignInPage(req) && !isAuthenticatedNextjs()) {
       return nextjsMiddlewareRedirect(req, '/auth');
@@ -50,15 +55,15 @@ export default convexAuthNextjsMiddleware((req) => {
     return NextResponse.redirect(url);
   }
 
-  // ---- kiiaren.com (marketing) ----
+  // ---- kiiaren.com (marketing/root) ----
   if (host === 'kiiaren.com') {
-    // Marketing is public, no auth redirect forced
+    // Since there is no dedicated marketing page (it redirects to workspace),
+    // we let it pass. If you add a (marketing) folder later, this will serve it.
     return NextResponse.next();
   }
 
   // ---- Localhost / Fallback ----
-  // For development (localhost:3000), behave like dashboard by default (existing behavior)
-  // or respect existing auth rules
+  // Standard auth protection for other cases
   if (!isSignInPage(req) && !isAuthenticatedNextjs()) {
     return nextjsMiddlewareRedirect(req, '/auth');
   }
