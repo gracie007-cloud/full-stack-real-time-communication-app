@@ -25,18 +25,16 @@ export default convexAuthNextjsMiddleware((req) => {
   }
 
   // ---- auth.kiiaren.com ----
-  // Unified authentication domain serving both UI and OAuth callbacks
-  // Root (/) -> serves login page from /account
-  // /api/auth/* -> OAuth callback endpoints
-  // /oauth-success -> post-OAuth redirect page
+  // Unified authentication domain serving login UI and OAuth success page
+  // Auth API calls go directly to Convex backend via NEXT_PUBLIC_CONVEX_URL
   if (host === 'auth.kiiaren.com') {
     // Root path serves the login UI
     if (url.pathname === '/') {
       url.pathname = '/account';
       return NextResponse.rewrite(url);
     }
-    // OAuth endpoints pass through unchanged
-    if (url.pathname.startsWith('/api/auth') || url.pathname === '/oauth-success') {
+    // OAuth success page after authentication
+    if (url.pathname === '/oauth-success') {
       return NextResponse.rewrite(url);
     }
     // Anything else redirects to main site
