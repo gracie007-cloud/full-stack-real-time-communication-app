@@ -39,10 +39,40 @@ export default convexAuthNextjsMiddleware((req) => {
     return NextResponse.rewrite(url);
   }
 
+  // ---- auth.kiiaren.com ----
+  // Handles Convex Auth callbacks and API requests
+  // Maps https://auth.kiiaren.com/callback/google -> /api/auth/callback/google
+  if (host === 'auth.kiiaren.com') {
+    // Ensure we are hitting the /api/auth path
+    if (!url.pathname.startsWith('/api/auth')) {
+      // If user hits root of auth.kiiaren.com, what should happen?
+      // Probably nothing useful effectively, maybe redirect home?
+      // But for strict mapping:
+      url.pathname = `/api/auth${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
   // ---- api.kiiaren.com ----
   if (host === 'api.kiiaren.com') {
     if (!url.pathname.startsWith('/api')) {
       url.pathname = `/api${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // ---- help.kiiaren.com ----
+  if (host === 'help.kiiaren.com') {
+    if (!url.pathname.startsWith('/help')) {
+      url.pathname = `/help${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // ---- doc.kiiaren.com ----
+  if (host === 'doc.kiiaren.com') {
+    if (!url.pathname.startsWith('/doc')) {
+      url.pathname = `/doc${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }
