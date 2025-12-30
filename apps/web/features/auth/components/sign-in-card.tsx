@@ -24,8 +24,10 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
 
   const handleOAuthSignIn = (value: 'github' | 'google') => {
     setPending(true);
+    // Use relative path for production so it resolves to auth.kiiaren.com/oauth-success
+    // which matches CUSTOM_AUTH_SITE_URL and passes Convex security validation
     const redirectTo = window.location.hostname.includes('kiiaren.com')
-      ? 'https://kiiaren.com/oauth-success'
+      ? '/oauth-success'
       : '/workspace';
 
     signIn(value, { redirectTo }).finally(() => setPending(false));

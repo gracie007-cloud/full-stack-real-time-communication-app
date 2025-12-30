@@ -40,17 +40,17 @@ export default convexAuthNextjsMiddleware((req) => {
   }
 
   // ---- auth.kiiaren.com ----
-  // Handles Convex Auth callbacks and API requests
-  // Maps https://auth.kiiaren.com/callback/google -> /api/auth/callback/google
+  // Handles Convex Auth callbacks and OAuth success redirect
+  // /api/auth/* -> stays as-is (handled by Next.js API route)
+  // /oauth-success -> stays as-is (Next.js page)
+  // Everything else -> redirect to main site
   if (host === 'auth.kiiaren.com') {
-    // Ensure we are hitting the /api/auth path
-    if (!url.pathname.startsWith('/api/auth')) {
-      // If user hits root of auth.kiiaren.com, what should happen?
-      // Probably nothing useful effectively, maybe redirect home?
-      // But for strict mapping:
-      url.pathname = `/api/auth${url.pathname}`;
+    // Allow /api/auth/* and /oauth-success to pass through
+    if (url.pathname.startsWith('/api/auth') || url.pathname === '/oauth-success') {
+      return NextResponse.rewrite(url);
     }
-    return NextResponse.rewrite(url);
+    // Anything else on auth subdomain should redirect to main site
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
   // ---- api.kiiaren.com ----
