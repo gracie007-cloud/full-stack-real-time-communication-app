@@ -1,284 +1,205 @@
 # Migration Notes for Maintainers
 
-This document describes the provider abstraction layer and how to integrate it with the existing codebase.
+This document describes the provider abstraction layer implementation and migration status.
 
-## Overview
+## Implementation Status
 
-The `@kiiaren/core` package introduces a provider abstraction layer that:
+### Completed
 
-1. Defines interfaces for all backend operations
-2. Separates managed-only features from OSS
-3. Enables future self-hosted deployments
-4. Does not break current Convex-based functionality
+| Component | Location | Status |
+|-----------|----------|--------|
+| Provider interfaces | `packages/core/src/providers/types.ts` | Done |
+| Managed feature definitions | `packages/core/src/managed/types.ts` | Done |
+| React context & hooks | `apps/web/lib/provider/context.tsx` | Done |
+| Provider selection | `apps/web/components/backend-provider.tsx` | Done |
+| Convex adapter | `apps/web/lib/provider/convex-adapter.tsx` | Done |
+| Self-host adapter (skeleton) | `apps/web/lib/provider/self-host-adapter.tsx` | Skeleton |
+| Feature gate components | `apps/web/components/feature-gate.tsx` | Done |
+| Layout integration | `apps/web/app/layout.tsx` | Done |
 
-## Current State
+### Not Changed
 
-**Created:**
-- `packages/core/` - Provider abstraction layer
-- `packages/core/src/providers/types.ts` - Interface definitions
-- `packages/core/src/providers/convex/` - Convex provider (skeleton)
-- `packages/core/src/providers/self-host/` - Self-host provider (skeleton)
-- `packages/core/src/managed/types.ts` - Managed-only feature definitions
-
-**Not changed:**
-- `apps/web/` - Still uses Convex directly
+- `apps/web/features/*/api/*.ts` - Feature hooks still use Convex directly
 - `convex/` - No changes to backend functions
-- Existing functionality is preserved
+- All existing functionality preserved
 
-## Migration Strategy
+## How It Works
 
-Migration is **incremental and optional**. The existing Convex integration continues to work. New code can optionally use the provider interface.
-
-### Phase 1: Coexistence (Current)
+### Provider Selection
 
 ```
-apps/web uses:
-├── Direct Convex imports (existing code)    ← works
-└── @kiiaren/core interfaces (new code)      ← works
+NEXT_PUBLIC_KIIAREN_PROVIDER="convex"  ← default
+                                   or "self-host" (not implemented)
 ```
 
-Both patterns work simultaneously. No breaking changes.
+Set in `.env` file. The `BackendProvider` component in `layout.tsx` reads this and instantiates the appropriate provider.
 
-### Phase 2: Provider Context (Next)
+### Provider Architecture
 
-Add provider context to apps/web:
+```
+apps/web/app/layout.tsx
+    └─ BackendProvider (components/backend-provider.tsx)
+        └─ [ConvexBackendProvider | SelfHostBackendProvider]
+            └─ BackendProviderContext (lib/provider/context.tsx)
+                └─ Your components (can use useBackend(), etc.)
+```
+
+### Available Hooks
+
+```typescript
+import { useBackend, useManagedFeature, useIsManaged } from '@/lib/provider';
+
+// Get full provider access
+const { provider, isReady, error } = useBackend();
+
+// Check if a managed feature is available
+const hasSearch = useManagedFeature('indexed_search');
+
+// Check if provider is managed
+const isManaged = useIsManaged();
+```
+
+### Feature Gating Components
 
 ```tsx
-// apps/web/components/kiiaren-provider.tsx
+import { FeatureGate, ManagedOnly, ManagedFeatureNotice } from '@/components/feature-gate';
 
-import { createContext, useContext, ReactNode } from 'react';
-import { BackendProvider, createConvexProvider } from '@kiiaren/core';
+// Gate specific features
+<FeatureGate feature="indexed_search" fallback={<BasicSearch />}>
+  <IndexedSearch />
+</FeatureGate>
 
-const KIIARENContext = createContext<BackendProvider | null>(null);
+// Gate to managed providers only
+<ManagedOnly fallback={<SelfHostNotice />}>
+  <EnterprisePanel />
+</ManagedOnly>
+```
 
-export function KIIARENProvider({
-  children,
-  provider,
-}: {
-  children: ReactNode;
-  provider: BackendProvider;
-}) {
-  return (
-    <KIIARENContext.Provider value={provider}>
-      {children}
-    </KIIARENContext.Provider>
-  );
-}
+## Existing Code Compatibility
 
-export function useBackendProvider() {
-  const provider = useContext(KIIARENContext);
-  if (!provider) {
-    throw new Error('useBackendProvider must be used within KIIARENProvider');
+Existing feature hooks (`useGetWorkspaces`, `useCreateMessage`, etc.) continue to work unchanged:
+
+```typescript
+// This still works - no changes required
+import { useQuery } from 'convex/react';
+import { api } from '@/../convex/_generated/api';
+
+export const useGetWorkspaces = () => {
+  const data = useQuery(api.workspaces.get);
+  return { data, isLoading: data === undefined };
+};
+```
+
+The provider abstraction is **additive**. You can use:
+1. Direct Convex hooks (existing pattern)
+2. Provider hooks for feature gating
+3. Both patterns simultaneously
+
+## Provider Interface vs Convex Hooks
+
+The `BackendProvider` interface uses async functions (promise-based), while Convex uses React hooks (reactive). For the Convex provider:
+
+| Provider Method | Convex Hook |
+|-----------------|-------------|
+| `provider.persistence.workspace.get()` | `useQuery(api.workspaces.get)` |
+| `provider.persistence.message.create()` | `useMutation(api.messages.create)` |
+
+The provider interface methods throw `NOT_IN_REACT` errors because they must be called within hooks. This is intentional - the provider interface is for:
+1. Feature gating (`provider.isManaged`)
+2. Provider identification (`provider.id`)
+3. Future abstraction (when migrating away from direct Convex calls)
+
+For now, continue using Convex hooks directly for data operations.
+
+## Migration Path for Components
+
+If you want to make a component provider-agnostic:
+
+### Phase 1: Add Feature Gating (Current)
+
+```tsx
+import { useManagedFeature } from '@/lib/provider';
+
+function SearchPanel() {
+  const hasIndexedSearch = useManagedFeature('indexed_search');
+
+  if (hasIndexedSearch) {
+    return <IndexedSearchPanel />;
   }
-  return provider;
+  return <BasicSearchPanel />;
 }
 ```
 
-Add to layout:
+### Phase 2: Abstract Data Hooks (Future)
+
+When self-host is implemented, abstract the data hooks:
 
 ```tsx
-// apps/web/app/layout.tsx
+// apps/web/lib/provider/hooks/use-workspaces.ts
+import { useQuery } from 'convex/react';
+import { api } from '@/../convex/_generated/api';
+import { useProviderId } from '@/lib/provider';
 
-import { createConvexProvider } from '@kiiaren/core';
-import { KIIARENProvider } from '@/components/kiiaren-provider';
+export function useWorkspaces() {
+  const providerId = useProviderId();
 
-const provider = createConvexProvider();
+  if (providerId === 'convex') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useQuery(api.workspaces.get);
+  }
 
-export default function RootLayout({ children }) {
-  return (
-    <ConvexAuthNextjsServerProvider>
-      <KIIARENProvider provider={provider}>
-        {/* existing providers */}
-        {children}
-      </KIIARENProvider>
-    </ConvexAuthNextjsServerProvider>
-  );
+  // Self-host implementation would go here
+  throw new Error('Self-host not implemented');
 }
 ```
 
-### Phase 3: Gradual Hook Migration
+## Environment Variables
 
-Migrate feature hooks to use provider interface. This is optional - existing hooks continue to work.
+```bash
+# Provider selection (default: convex)
+NEXT_PUBLIC_KIIAREN_PROVIDER=convex
 
-**Before (direct Convex):**
+# Convex (required for convex provider)
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
 
-```tsx
-// apps/web/features/messages/api/use-create-message.ts
-
-import { useMutation } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
-
-export const useCreateMessage = () => {
-  const mutation = useMutation(api.messages.create);
-  // ...
-};
-```
-
-**After (via provider):**
-
-```tsx
-// apps/web/features/messages/api/use-create-message.ts
-
-import { useMutation } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
-import { useBackendProvider } from '@/components/kiiaren-provider';
-
-export const useCreateMessage = () => {
-  const { persistence } = useBackendProvider();
-
-  // For now, still use Convex directly
-  // Provider interface is for future abstraction
-  const mutation = useMutation(api.messages.create);
-
-  // In future, can switch to:
-  // const create = persistence.message.create;
-
-  // ...
-};
-```
-
-### Phase 4: ConvexProvider Implementation
-
-Implement the ConvexProvider to actually wrap Convex hooks:
-
-```tsx
-// packages/core/src/providers/convex/react.tsx
-
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
-import { PersistenceProvider, Message, PaginatedResult } from '../types';
-
-export function useConvexPersistence(): PersistenceProvider {
-  return {
-    message: {
-      async create(data) {
-        // This would need to be called differently in React context
-        // Likely via a mutation hook wrapper
-      },
-      // ...
-    },
-    // ...
-  };
-}
-```
-
-Note: Full implementation requires reconciling Convex's hook-based API with the promise-based provider interface. This may require wrapper components or a different approach.
-
-### Phase 5: Self-Host Implementation (Future)
-
-When self-host provider is implemented:
-
-1. Implement all methods in `packages/core/src/providers/self-host/`
-2. Add database connection logic
-3. Add WebSocket event handling
-4. Test with PostgreSQL backend
-
-## File Locations
-
-### Provider Interfaces
-
-| File | Purpose |
-|------|---------|
-| `packages/core/src/providers/types.ts` | All interface definitions |
-| `packages/core/src/index.ts` | Public exports |
-
-### Provider Implementations
-
-| File | Purpose |
-|------|---------|
-| `packages/core/src/providers/convex/index.ts` | Convex provider (skeleton) |
-| `packages/core/src/providers/self-host/index.ts` | Self-host provider (skeleton) |
-
-### Managed Features
-
-| File | Purpose |
-|------|---------|
-| `packages/core/src/managed/types.ts` | Extension hooks, feature gates |
-
-## Interface Summary
-
-### BackendProvider
-
-```typescript
-interface BackendProvider {
-  id: string;
-  name: string;
-  isManaged: boolean;
-
-  auth: AuthProvider;
-  events: EventsProvider;
-  persistence: PersistenceProvider;
-  storage: StorageProvider;
-
-  initialize(config): Promise<void>;
-  destroy(): Promise<void>;
-}
-```
-
-### PersistenceProvider
-
-```typescript
-interface PersistenceProvider {
-  workspace: {
-    create(name: string): Promise<EntityId>;
-    get(id: EntityId): Promise<Workspace | null>;
-    // ...
-  };
-  channel: { /* CRUD */ };
-  member: { /* CRUD */ };
-  message: { /* CRUD + pagination */ };
-  reaction: { toggle(messageId, value) };
-  conversation: { createOrGet(...) };
-  doc: { /* CRUD + archive/restore + search */ };
-  board: { /* CRUD */ };
-}
-```
-
-### ExtensionHooks (Managed-Only)
-
-```typescript
-interface ExtensionHooks {
-  audit: {
-    log(event): Promise<void>;  // no-op in OSS
-    query(params): Promise<never>;  // throws in OSS
-  };
-  search: {
-    index(event): Promise<void>;  // no-op in OSS
-    search(params): Promise<never>;  // throws in OSS
-  };
-  ai: { /* ... */ };
-  notification: { /* ... */ };
-  kms: { /* ... */ };
-}
+# Self-host (required for self-host provider, not implemented)
+KIIAREN_DATABASE_URL=postgresql://...
+NEXT_PUBLIC_KIIAREN_WS_URL=wss://...
 ```
 
 ## Testing
 
-After migration:
+1. **Default Convex behavior**: Run app normally, everything should work
+2. **Feature gating**: Check that `useManagedFeature()` returns `true` for Convex
+3. **Self-host error**: Set `NEXT_PUBLIC_KIIAREN_PROVIDER=self-host`, expect warning + errors
 
-1. Run existing test suite - no regressions
-2. Test provider initialization
-3. Test feature flag behavior (isManaged)
-4. Test extension hook error messages in OSS
+## File Reference
 
-## Breaking Changes
+| File | Purpose |
+|------|---------|
+| `apps/web/lib/provider/index.ts` | Main export for provider runtime |
+| `apps/web/lib/provider/context.tsx` | React context and hooks |
+| `apps/web/lib/provider/types.ts` | Provider runtime types |
+| `apps/web/lib/provider/convex-adapter.tsx` | Convex provider implementation |
+| `apps/web/lib/provider/self-host-adapter.tsx` | Self-host provider skeleton |
+| `apps/web/components/backend-provider.tsx` | Provider selection component |
+| `apps/web/components/feature-gate.tsx` | Feature gating components |
+| `packages/core/src/providers/types.ts` | Interface definitions |
+| `packages/core/src/managed/types.ts` | Managed feature definitions |
 
-None. This is an additive change. Existing code continues to work.
+## Known Limitations
+
+1. **Self-host not implemented**: Selecting `self-host` provider will show warnings and errors
+2. **Provider interface throws in Convex**: Direct data operations via `provider.persistence.*` throw because Convex requires hooks
+3. **No runtime provider switching**: Provider is selected at build time via env var
 
 ## Future Work
 
-1. **React integration** - Reconcile hook-based Convex API with provider interface
-2. **Self-host implementation** - PostgreSQL + WebSocket backend
-3. **Provider switching** - Runtime provider selection based on config
-4. **Extension hook routing** - Connect to managed services when available
-
-## Questions
-
-For implementation questions, refer to:
-- `docs/ARCHITECTURE.md` - System design
-- `docs/EDITIONING.md` - OSS vs managed boundaries
-- `packages/core/src/providers/types.ts` - Interface definitions
+1. Implement self-host provider (PostgreSQL + WebSocket)
+2. Create provider-agnostic data hooks
+3. Add provider health checks
+4. Runtime provider switching for multi-tenant
 
 ---
 
-*This document will be updated as migration progresses.*
+*Last updated: Provider abstraction wired into apps/web*

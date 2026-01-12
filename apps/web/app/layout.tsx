@@ -5,7 +5,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { PropsWithChildren } from 'react';
 
-import { ConvexClientProvider } from '@/components/convex-client-provider';
+import { BackendProvider } from '@/components/backend-provider';
 import { JotaiProvider } from '@/components/jotai-provider';
 import { ModalProvider } from '@/components/modal-provider';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -31,14 +31,14 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
             enableSystem
             disableTransitionOnChange
           >
-            <ConvexClientProvider>
+            <BackendProvider>
               <JotaiProvider>
                 <Toaster richColors closeButton />
                 <ModalProvider />
 
                 {children}
               </JotaiProvider>
-            </ConvexClientProvider>
+            </BackendProvider>
           </ThemeProvider>
           <Analytics />
           <SpeedInsights />

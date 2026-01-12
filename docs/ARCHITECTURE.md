@@ -84,16 +84,25 @@ KIIAREN/
 │   └── web/                          # Next.js application
 │       ├── app/                      # App router pages
 │       ├── components/               # UI components
+│       │   ├── backend-provider.tsx  # Provider selection component
+│       │   └── feature-gate.tsx      # Managed feature gating
 │       ├── features/                 # Feature modules (api/, components/, store/)
-│       └── hooks/                    # Shared React hooks
+│       ├── hooks/                    # Shared React hooks
+│       └── lib/
+│           └── provider/             # Provider runtime module
+│               ├── index.ts          # Public exports
+│               ├── context.tsx       # React context & hooks
+│               ├── types.ts          # Provider runtime types
+│               ├── convex-adapter.tsx    # Convex provider adapter
+│               └── self-host-adapter.tsx # Self-host provider adapter
 │
 ├── packages/
-│   ├── core/                         # Provider abstraction layer
+│   ├── core/                         # Provider abstraction layer (interfaces)
 │   │   └── src/
 │   │       ├── providers/
 │   │       │   ├── types.ts          # Interface definitions
-│   │       │   ├── convex/           # ConvexProvider implementation
-│   │       │   └── self-host/        # SelfHostProvider skeleton
+│   │       │   ├── convex/           # ConvexProvider factory
+│   │       │   └── self-host/        # SelfHostProvider factory
 │   │       ├── managed/
 │   │       │   └── types.ts          # Managed features & extension hooks
 │   │       └── index.ts              # Public exports

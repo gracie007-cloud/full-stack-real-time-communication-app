@@ -205,11 +205,22 @@ This enables:
 
 **Single `.env` file** at monorepo root controls all apps (web, convex, docs, whiteboard).
 
-See `.env.example` for required environment variables:
+### Provider Selection
+
+```bash
+# Backend provider (default: convex)
+NEXT_PUBLIC_KIIAREN_PROVIDER=convex  # or "self-host" (not implemented)
+```
+
+### Required Variables
+
 - `CONVEX_DEPLOYMENT` - Your Convex deployment (from dashboard)
 - `NEXT_PUBLIC_CONVEX_URL` - Public Convex URL
-- `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` - Google OAuth (optional)
-- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` - GitHub OAuth (optional)
+
+### Optional Variables
+
+- `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` - Google OAuth
+- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` - GitHub OAuth
 - `SITE_URL` - Application URL (for auth callbacks)
 
 For detailed variable mapping and validation, see `ENV_MAPPING.md`.
