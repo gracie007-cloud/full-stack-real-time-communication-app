@@ -1,5 +1,52 @@
 # KIIAREN - Real-Time Collaboration Platform
 
+KIIAREN is an open-core collaboration platform with workspaces, channels, direct messages, docs, and whiteboards.
+
+## Deployment Options
+
+| Option | Backend | Status | Best For |
+|--------|---------|--------|----------|
+| **Managed Cloud** | Convex | Production-ready | Most users, teams, enterprises |
+| **Self-Hosted** | PostgreSQL + WebSocket | Skeleton only | Contributors, specific compliance needs |
+
+**Default provider: Convex** - A managed backend service that handles real-time subscriptions, authentication, and storage. This is the recommended deployment path.
+
+---
+
+## Self-Host Reality Check
+
+Before self-hosting, understand what you're taking on:
+
+**You are responsible for:**
+- Server provisioning and maintenance
+- Database backups and disaster recovery
+- Security patches and vulnerability management
+- TLS certificates and network security
+- Scaling decisions and load balancing
+- Uptime and incident response
+
+**You will NOT have:**
+- Indexed full-text search (basic ILIKE only)
+- Centralized key management (KMS)
+- End-to-end encrypted sync
+- Audit logging / eDiscovery
+- Enterprise SSO (SAML/OIDC)
+- AI features with persistent memory
+- Push notification infrastructure
+- SLA guarantees
+- Professional support
+
+**Requirements:**
+- PostgreSQL 14+
+- Node.js 20+
+- WebSocket server infrastructure
+- S3-compatible storage or local disk
+- DevOps expertise
+
+See [docs/EDITIONING.md](docs/EDITIONING.md) for detailed feature boundaries.
+
+---
+
 ## Project Structure
 
 ```
@@ -13,12 +60,14 @@ KIIAREN/
 │       ├── next.config.mjs  # Next.js config
 │       └── ...config files
 ├── packages/
+│   ├── core/                # Backend provider abstraction layer
+│   │   └── src/
+│   │       ├── providers/   # Provider interfaces & implementations
+│   │       └── managed/     # Managed-tier feature definitions
 │   └── shared/              # Shared types and schemas
-│       ├── src/
-│       │   ├── types/       # Convex type re-exports
-│       │   └── schemas/     # Zod validation schemas
-│       ├── package.json
-│       └── tsconfig.json
+│       └── src/
+│           ├── types/       # Convex type re-exports
+│           └── schemas/     # Zod validation schemas
 ├── convex/                  # Convex backend (at root - standard practice)
 │   ├── schema.ts
 │   ├── channels.ts
@@ -104,23 +153,44 @@ bunx convex dev
 
 ## Architecture
 
-### No Mock Data ✅
-All UI components use real Convex backend queries and mutations. No hardcoded or fake data exists in the codebase.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design.
 
-### RBAC Implementation ✅
-Comprehensive role-based access control is already implemented:
-- Workspace membership checks for all workspace operations
-- Channel membership validation for message access  
-- Admin-only operations for workspace/channel management
-- Message author verification for edit/delete operations
+### Provider Abstraction
+
+KIIAREN uses a provider abstraction layer (`@kiiaren/core`) that decouples the web app from any specific backend:
+
+```
+apps/web → @kiiaren/core (interface) → ConvexProvider | SelfHostProvider
+```
+
+This enables:
+- Managed deployments via Convex (default)
+- Self-hosted deployments via PostgreSQL + WebSocket (skeleton)
+- Future backend providers
+
+### Core Principles
+
+- **Event-centric**: All state changes flow through typed domain events
+- **No mock data**: All UI uses real backend queries/mutations
+- **RBAC**: Workspace membership, admin roles, message ownership verified
+- **Extension hooks**: OSS emits events, managed tier can process them
 
 ### Features
-- **Authentication**: Email/password, Google OAuth, GitHub OAuth
-- **Workspaces**: Create, join, manage workspaces
-- **Channels**: Create, update, delete channels  
-- **Direct Messages**: 1-on-1 conversations
-- **Messages**: Rich text editor, image uploads, threads, reactions
-- **Real-time**: Live updates via Convex subscriptions
+
+| Feature | OSS | Managed |
+|---------|-----|---------|
+| Workspaces, Channels, DMs | Yes | Yes |
+| Rich text messages, threads | Yes | Yes |
+| File uploads, reactions | Yes | Yes |
+| Docs (Notion-like) | Yes | Yes |
+| Boards (Excalidraw) | Yes | Yes |
+| Basic auth (email, OAuth) | Yes | Yes |
+| Indexed full-text search | No | Yes |
+| KMS / key rotation | No | Yes |
+| Audit logs / eDiscovery | No | Yes |
+| Enterprise SSO | No | Yes |
+| AI agents | No | Yes |
+| SLA | No | Yes |
 
 ## Technology Stack
 
@@ -144,9 +214,16 @@ See `.env.example` for required environment variables:
 
 For detailed variable mapping and validation, see `ENV_MAPPING.md`.
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - System design and provider interfaces
+- [Editioning](docs/EDITIONING.md) - OSS vs Managed feature boundaries
+- [Convex Setup](CONVEX_SETUP.md) - Convex backend configuration
+- [Environment Variables](ENV_MAPPING.md) - Configuration reference
+
 ## License
 
-MIT
+MIT (see [docs/EDITIONING.md](docs/EDITIONING.md) for licensing philosophy)
 
 ## Original Author
 
@@ -154,4 +231,4 @@ Sanidhya Kumar Verma - [GitHub](https://github.com/sanidhyy)
 
 ## Monorepo Refactor
 
-This project was refactored into a monorepo structure to improve maintainability and code organization while maintaining 100% feature compatibility.
+This project was refactored into a monorepo structure with provider abstraction to support both managed and self-hosted deployments while maintaining feature compatibility.
