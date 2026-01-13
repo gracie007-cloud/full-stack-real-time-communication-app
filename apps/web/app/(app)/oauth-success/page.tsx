@@ -1,6 +1,6 @@
 'use client';
 
-import { useConvexAuth } from 'convex/react';
+import { useConvexAuth } from '@/lib/provider';
 import { Loader } from 'lucide-react';
 import { useEffect } from 'react';
 

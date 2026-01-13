@@ -56,6 +56,10 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
     setPending(true);
     setError('');
     signIn('password', { name, email, password, flow: 'signUp' })
+      .then(() => {
+        // Redirect to workspace after successful sign-up
+        window.location.href = '/workspace';
+      })
       .catch(() => {
         setError('Something went wrong!');
       })
