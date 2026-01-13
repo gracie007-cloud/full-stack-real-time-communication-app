@@ -18,20 +18,57 @@ export function randomBytes(length: number): Uint8Array {
 }
 
 /**
- * Encode bytes to URL-safe base64 (base64url)
- *
- * Uses standard base64 then replaces +/ with -_ and removes padding.
- * Result is safe for URLs, DNS TXT records, and file names.
+ * Standard base64 alphabet
  */
-export function base64urlEncode(bytes: Uint8Array): string {
-  // Convert Uint8Array to binary string
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/**
+ * Pure-JS base64 encoder for Uint8Array
+ *
+ * Used as fallback when Buffer/btoa are unavailable (e.g., some server runtimes).
+ * Processes 3 bytes at a time into 4 base64 characters.
+ */
+function base64EncodeBytes(bytes: Uint8Array): string {
+  let result = '';
+  const len = bytes.length;
+
+  // Process 3 bytes at a time
+  for (let i = 0; i < len; i += 3) {
+    const b0 = bytes[i];
+    const b1 = i + 1 < len ? bytes[i + 1] : 0;
+    const b2 = i + 2 < len ? bytes[i + 2] : 0;
+
+    // Combine 3 bytes into 24 bits, then split into 4 6-bit indices
+    result += BASE64_CHARS[(b0 >> 2) & 0x3f];
+    result += BASE64_CHARS[((b0 << 4) | (b1 >> 4)) & 0x3f];
+    result += i + 1 < len ? BASE64_CHARS[((b1 << 2) | (b2 >> 6)) & 0x3f] : '=';
+    result += i + 2 < len ? BASE64_CHARS[b2 & 0x3f] : '=';
   }
 
-  // Use btoa for base64 encoding, then make URL-safe
-  const base64 = btoa(binary);
+  return result;
+}
+
+/**
+ * Encode bytes to URL-safe base64 (base64url)
+ *
+ * Uses Buffer.toString('base64') if available (Node.js), otherwise falls back
+ * to a pure-JS implementation. This ensures compatibility across runtimes
+ * (Convex, Node.js, browsers, edge workers) where btoa may not exist.
+ *
+ * Output lengths (no padding): 16 bytes -> 22 chars, 24 bytes -> 32 chars
+ */
+export function base64urlEncode(bytes: Uint8Array): string {
+  let base64: string;
+
+  // Prefer Buffer if available (Node.js environments)
+  if (typeof Buffer !== 'undefined') {
+    base64 = Buffer.from(bytes).toString('base64');
+  } else {
+    // Pure-JS fallback for runtimes without Buffer/btoa
+    base64 = base64EncodeBytes(bytes);
+  }
+
+  // Convert to URL-safe base64: replace +/ with -_, strip padding
   return base64
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
