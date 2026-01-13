@@ -39,6 +39,10 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
     setError('');
 
     signIn('password', { email, password, flow: 'signIn' })
+      .then(() => {
+        // Redirect to workspace after successful sign-in
+        window.location.href = '/workspace';
+      })
       .catch(() => {
         setError('Invalid email or password!');
       })
