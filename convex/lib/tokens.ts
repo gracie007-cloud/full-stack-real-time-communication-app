@@ -41,9 +41,10 @@ export function base64urlEncode(bytes: Uint8Array): string {
 /**
  * Alphabet for join codes - uppercase alphanumeric excluding ambiguous characters
  * Excludes: O (confused with 0), I (confused with 1), L (confused with 1)
- * Total: 32 characters (23 letters + 9 digits: 2-9 excluding 0,1)
+ * Total: 32 characters (23 letters + 9 digits: 0, 2-9)
+ * Note: 0 is included since O is excluded, making them distinguishable
  */
-const JOIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const JOIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ023456789';
 
 /**
  * Generate a character from the join code alphabet using rejection sampling
@@ -160,7 +161,7 @@ export function _testTokenGeneration(): {
   // Validate join code: 6 chars, uppercase, from restricted alphabet
   const joinCodeValid =
     joinCode.length === 6 &&
-    /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]+$/.test(joinCode);
+    /^[ABCDEFGHJKMNPQRSTUVWXYZ023456789]+$/.test(joinCode);
 
   // Validate verification token: 32 chars, base64url safe
   const verificationTokenValid =
