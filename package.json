@@ -13,6 +13,9 @@
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
     "format:fix": "npm run format:fix --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "ci": "npm run lint && npm run typecheck",
+    "check:imports": "bash scripts/check-convex-imports.sh",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "convex:dev": "convex dev"
   },

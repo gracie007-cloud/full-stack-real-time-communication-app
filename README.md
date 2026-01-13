@@ -18,6 +18,7 @@ KIIAREN is an open-core collaboration platform with workspaces, channels, direct
 Before self-hosting, understand what you're taking on:
 
 **You are responsible for:**
+
 - Server provisioning and maintenance
 - Database backups and disaster recovery
 - Security patches and vulnerability management
@@ -26,6 +27,7 @@ Before self-hosting, understand what you're taking on:
 - Uptime and incident response
 
 **You will NOT have:**
+
 - Indexed full-text search (basic ILIKE only)
 - Centralized key management (KMS)
 - End-to-end encrypted sync
@@ -37,13 +39,14 @@ Before self-hosting, understand what you're taking on:
 - Professional support
 
 **Requirements:**
+
 - PostgreSQL 14+
 - Node.js 20+
 - WebSocket server infrastructure
 - S3-compatible storage or local disk
 - DevOps expertise
 
-See [docs/EDITIONING.md](docs/EDITIONING.md) for detailed feature boundaries.
+See [docs/product/editioning.md](docs/product/editioning.md) for detailed feature boundaries.
 
 ---
 
@@ -82,6 +85,7 @@ KIIAREN/
 ## Setup and Development
 
 ### Prerequisites
+
 - Node.js >= 20.0.0
 - npm >= 10.0.0
 
@@ -101,7 +105,7 @@ npm install
 2. Fill in your Convex deployment details
 3. Set up OAuth credentials (Google, GitHub) if needed
 
-**Note:** All apps use a single `.env` file at the monorepo root. See `ENV_MAPPING.md` for detailed variable documentation.
+**Note:** All apps use a single `.env` file at the monorepo root. See [docs/setup/env-mapping.md](docs/setup/env-mapping.md) for detailed variable documentation.
 
 ### Development
 
@@ -153,7 +157,7 @@ bunx convex dev
 
 ## Architecture
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design.
+See [docs/architecture/system-design.md](docs/architecture/system-design.md) for detailed system design.
 
 ### Provider Abstraction
 
@@ -164,6 +168,7 @@ apps/web → @kiiaren/core (interface) → ConvexProvider | SelfHostProvider
 ```
 
 This enables:
+
 - Managed deployments via Convex (default)
 - Self-hosted deployments via PostgreSQL + WebSocket (skeleton)
 - Future backend providers
@@ -225,18 +230,20 @@ NEXT_PUBLIC_KIIAREN_PROVIDER=convex  # or "self-host" (not implemented)
 - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` - GitHub OAuth
 - `SITE_URL` - Application URL (for auth callbacks)
 
-For detailed variable mapping and validation, see `ENV_MAPPING.md`.
+For detailed variable mapping and validation, see [docs/setup/env-mapping.md](docs/setup/env-mapping.md).
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) - System design and provider interfaces
-- [Editioning](docs/EDITIONING.md) - OSS vs Managed feature boundaries
-- [Convex Setup](CONVEX_SETUP.md) - Convex backend configuration
-- [Environment Variables](ENV_MAPPING.md) - Configuration reference
+- [Architecture](docs/architecture/system-design.md) - System design and provider interfaces
+- [Editioning](docs/product/editioning.md) - OSS vs Managed feature boundaries
+- [Convex Setup](docs/setup/convex.md) - Convex backend configuration
+- [Environment Variables](docs/setup/env-mapping.md) - Configuration reference
+- [Migration Guide](docs/setup/migration.md) - Migration instructions
+- [License Strategy](docs/product/license-strategy.md) - Licensing philosophy
 
 ## License
 
-MIT (see [docs/EDITIONING.md](docs/EDITIONING.md) for licensing philosophy)
+MIT (see [docs/product/license-strategy.md](docs/product/license-strategy.md) for licensing philosophy)
 
 ## Original Author
 

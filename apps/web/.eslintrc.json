@@ -1,0 +1,43 @@
+{
+    "extends": [
+        "next/core-web-vitals",
+        "prettier"
+    ],
+    "rules": {
+        "no-restricted-imports": [
+            "error",
+            {
+                "patterns": [
+                    {
+                        "group": [
+                            "convex/react",
+                            "convex/_generated/*",
+                            "@convex-dev/*"
+                        ],
+                        "message": "Direct Convex imports are prohibited in UI code. Use @/lib/provider or @/lib/backend abstractions instead."
+                    }
+                ]
+            }
+        ]
+    },
+    "overrides": [
+        {
+            "files": [
+                "lib/provider/**/*",
+                "lib/backend/**/*",
+                "components/backend-provider.tsx",
+                "components/convex-client-provider.tsx",
+                "app/(app)/layout.tsx",
+                "middleware.ts",
+                "features/*/api/*.ts",
+                "features/*/api/*.tsx",
+                "features/*/components/*.tsx",
+                "app/(app)/account/page.tsx",
+                "app/(app)/oauth-success/page.tsx"
+            ],
+            "rules": {
+                "no-restricted-imports": "off"
+            }
+        }
+    ]
+}

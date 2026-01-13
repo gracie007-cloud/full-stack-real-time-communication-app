@@ -1,13 +1,13 @@
 'use client';
 
 import { Excalidraw } from '@excalidraw/excalidraw';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line -- Using any for Excalidraw imperative API type
 type ExcalidrawImperativeAPI = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line -- Using any for Excalidraw element type
 type ExcalidrawElement = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line -- Using any for Excalidraw app state type
 type AppState = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line -- Using any for Excalidraw binary files type
 type BinaryFiles = any;
 import { useTheme } from 'next-themes';
 import { useCallback, useState } from 'react';
@@ -24,12 +24,12 @@ export const ExcalidrawWrapper = ({ initialData, onChange }: ExcalidrawWrapperPr
   // Parse initial data
   const parsedData = initialData
     ? (() => {
-        try {
-          return JSON.parse(initialData);
-        } catch {
-          return { elements: [], appState: {}, files: {} };
-        }
-      })()
+      try {
+        return JSON.parse(initialData);
+      } catch {
+        return { elements: [], appState: {}, files: {} };
+      }
+    })()
     : undefined;
 
   const handleChange = useCallback(
