@@ -1,0 +1,32 @@
+# Local development files
+# This file is for local-only ignores that shouldn't be committed
+
+# IDE specific (if not already in .gitignore)
+.vscode/
+.idea/
+
+# Local environment files
+.env.local
+.env*.local
+
+# Local test files
+test-local/
+*.local.test.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build artifacts (if needed locally)
+dist-local/
+build-local/
